@@ -101,6 +101,42 @@ router.post('/forgotpassword', function(req,res){
 })
 
 
+router.get('/get', function(req,res){
+    var query="select id,name,email,contactNumber,status from user where role='user'";
+    connection.query(query,(err,results)=>{
+        if(!err){
+            return res.status(200).json(results);
+        }
+        else{
+            return res.status(500).json(err);
+        }
+    })
+})
+
+router.patch('/update', function(req,res){
+    let user=req.body;
+    var query="update user set status=? where id=?";
+    connection.query(query,[user.status,user.id],(err,results)=>{
+        if(!err){
+            if(results.affectedRows==0){
+                return res.status(404).json({message:"User id does not exist"});
+            }
+            return res.status(200).json({message:"User Updated Successfully"});
+        }
+        else{
+            return res.status(500).json(err);
+        }
+    })
+})
+
+
+router.get('/checkToken', function(req,res){
+    return req.status(200).json({message:"true"});
+})
+
+router.post('/changePassword', function(req,res){
+   // const
+})
 
 
 module.exports = router;
