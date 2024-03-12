@@ -4,6 +4,8 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const nodemailer=require('nodemailer');
 require('dotenv').config();
+var auth=require('../services/authentication');
+var checkRole=require('../services/checkRole');
 
 router.post('/signup', function (req, res) {
     let user = req.body;
@@ -101,7 +103,7 @@ router.post('/forgotpassword', function(req,res){
 })
 
 
-router.get('/get', function(req,res){
+router.get('/get',auth.authenticateToken,checkRole.checkRole ,function(req,res){
     var query="select id,name,email,contactNumber,status from user where role='user'";
     connection.query(query,(err,results)=>{
         if(!err){
@@ -113,7 +115,7 @@ router.get('/get', function(req,res){
     })
 })
 
-router.patch('/update', function(req,res){
+router.patch('/update',auth.authenticateToken,checkRole.checkRole ,function(req,res){
     let user=req.body;
     var query="update user set status=? where id=?";
     connection.query(query,[user.status,user.id],(err,results)=>{
@@ -130,12 +132,38 @@ router.patch('/update', function(req,res){
 })
 
 
-router.get('/checkToken', function(req,res){
+router.get('/checkToken', auth.authenticateToken,function(req,res){
     return req.status(200).json({message:"true"});
 })
 
 router.post('/changePassword', function(req,res){
-   // const
+    const user=req.body;
+    const email=res.locals.email;
+    var query="select * from user where email =? and password=?";
+    connection.query(query,[email,user.oldPassword],(err,results)=>{
+        if(!err){
+            if(results.length<=0){
+                return res.status(400).json({message:"Incorrect Old Password"});
+            }
+            else if(results[0].password==user.oldPassword){
+                query="update user set password=?";
+                connection.query(query,[user.newPassword,email],(err,results)=>{
+                    if(!err){
+                        return res.status(200).json({message:"Password updated successfully."})
+                    }
+                    else{
+                        return res.status(500).json(err);
+                    }
+                })
+            }
+            else{
+                return req.status(400).json({message:"Something went wrong. Please try again later"})
+            }
+        }
+        else{
+            return res.status(500).json(err);
+        }
+    })
 })
 
 
